@@ -33,11 +33,15 @@ module RedmineMessenger
             title: I18n.t(:field_priority),
             value: ERB::Util.html_escape(priority.to_s),
             short: true
-          }, {
-            title: I18n.t(:field_assigned_to),
-            value: ERB::Util.html_escape(assigned_to.to_s),
-            short: true
           }]
+
+          if assigned_to.present?
+            attachment[:fields] << {
+              title: I18n.t(:field_assigned_to),
+              value: ERB::Util.html_escape(assigned_to.to_s),
+              short: true
+            }
+          end
 
           if RedmineMessenger.setting?(:display_watchers)
             attachment[:fields] << {
