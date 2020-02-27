@@ -83,7 +83,18 @@ module RedmineMessenger
             attachment[:text] = ERB::Util.html_escape(current_journal.notes)
           end
           fields = current_journal.details.map { |d| Messenger.detail_to_field d }
-          attachment[:fields] = fields if fields.any?
+          attachment[:fields] = if fields.any?
+                                  fields
+                                else
+                                  []
+                                end
+
+          if current_journal.private_notes?
+            attachment[:fields] << {
+              title: I18n.t(:field_is_private),
+              short: true
+            }
+          end
 
           Messenger.speak(l(:label_messenger_issue_updated,
                             project_url: "<#{Messenger.object_url project}|#{ERB::Util.html_escape(project)}>",
