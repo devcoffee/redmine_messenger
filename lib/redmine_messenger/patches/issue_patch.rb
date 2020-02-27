@@ -43,6 +43,14 @@ module RedmineMessenger
             }
           end
 
+          attachments.each do |att|
+            attachment[:fields] << {
+              title: I18n.t(:label_attachment),
+              value: "<#{Messenger.object_url att}|#{ERB::Util.html_escape(att.filename)}>",
+              short: true
+            }
+          end
+
           if RedmineMessenger.setting?(:display_watchers)
             attachment[:fields] << {
               title: I18n.t(:field_watcher),
