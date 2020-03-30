@@ -94,6 +94,8 @@ class Messenger
             Rails.logger.warn("***********START DEBUG DEVCOFFEE*********")
             Rails.logger.warn("Response")
             Rails.logger.warn(response)
+            Rails.logger.warn("Response inspect")
+            Rails.logger.warn(response.inspect)
             Rails.logger.warn("***********END DEBUG DEVCOFFEE*********")
             Rails.logger.warn(response.inspect) unless [Net::HTTPSuccess, Net::HTTPRedirection, Net::HTTPOK].include? response
           end
