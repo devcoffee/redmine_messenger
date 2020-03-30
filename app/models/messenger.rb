@@ -60,8 +60,6 @@ class Messenger
           req.set_form_data(payload: params.to_json)
           Net::HTTP.start(uri.host, uri.port, http_options) do |http|
             Rails.logger.warn("******************************************* DEVCOFFEE *******************************************")
-            Rails.logger.warn(uri.host_name)
-            Rails.logger.warn("******************************************* DEVCOFFEE *******************************************")
             Rails.logger.warn(uri.host)
             Rails.logger.warn("******************************************* DEVCOFFEE *******************************************")
             Rails.logger.warn(uri.hostname)
