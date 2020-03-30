@@ -68,7 +68,7 @@ class Messenger
                 Rails.logger.warn(res.value)
               end
             Rails.logger.warn(response.inspect) unless [Net::HTTPSuccess, Net::HTTPRedirection, Net::HTTPOK].include? response
-          end
+          
         rescue StandardError => e
           Rails.logger.warn("cannot connect to #{url}")
           Rails.logger.warn(e)
