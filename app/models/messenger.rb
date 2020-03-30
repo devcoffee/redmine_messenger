@@ -59,6 +59,14 @@ class Messenger
           req = Net::HTTP::Post.new(uri)
           req.set_form_data(payload: params.to_json)
           Net::HTTP.start(uri.host, uri.port, http_options) do |http|
+            Rails.logger.warn("******************************************* DEVCOFFEE *******************************************")
+            Rails.logger.warn(uri.host_name)
+            Rails.logger.warn("******************************************* DEVCOFFEE *******************************************")
+            Rails.logger.warn(uri.host)
+            Rails.logger.warn("******************************************* DEVCOFFEE *******************************************")
+            Rails.logger.warn(uri.hostname)
+            Rails.logger.warn("******************************************* DEVCOFFEE *******************************************")
+          
             response = http.request(req)
             Rails.logger.warn(response.inspect) unless [Net::HTTPSuccess, Net::HTTPRedirection, Net::HTTPOK].include? response
           end
