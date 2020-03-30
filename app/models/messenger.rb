@@ -27,10 +27,12 @@ class Messenger
     end
 
     def speak(msg, channels, url, options)
+      Rails.logger.warn("***********START DEBUG DEVCOFFEE*********")
       Rails.logger.warn("iniciando Transmissao de msg")
       url ||= RedmineMessenger.settings[:messenger_url]
-      Rails.logger.warn("URL")
+      Rails.logger.warn("URL utilizada")
       Rails.logger.warn(url)
+      Rails.logger.warn("***********END DEBUG DEVCOFFEE*********")
 
       return if url.blank?
       return if channels.blank?
@@ -41,8 +43,10 @@ class Messenger
       }
 
       username = Messenger.textfield_for_project(options[:project], :messenger_username)
-      Rails.logger.warn("username")
+      Rails.logger.warn("***********START DEBUG DEVCOFFEE*********")
+      Rails.logger.warn("username informado")
       Rails.logger.warn(username)
+      Rails.logger.warn("***********END DEBUG DEVCOFFEE*********")
 
       params[:username] = username if username.present?
       params[:attachments] = options[:attachment]&.any? ? [options[:attachment]] : []
@@ -58,21 +62,39 @@ class Messenger
       channels.each do |channel|
         uri = URI(url)
         params[:channel] = channel
+        Rails.logger.warn("***********START DEBUG DEVCOFFEE*********")
         Rails.logger.warn("channel")
         Rails.logger.warn(channel)
+        Rails.logger.warn("***********END DEBUG DEVCOFFEE*********")
 
         http_options = { use_ssl: uri.scheme == 'https' }
         http_options[:verify_mode] = OpenSSL::SSL::VERIFY_NONE unless RedmineMessenger.setting?(:messenger_verify_ssl)
+        Rails.logger.warn("***********START DEBUG DEVCOFFEE*********")
         Rails.logger.warn("http_options")
         Rails.logger.warn(http_options)
+        Rails.logger.warn("***********END DEBUG DEVCOFFEE*********")
 
         begin
           req = Net::HTTP::Post.new(uri)
           req.set_form_data(payload: params.to_json)
           Net::HTTP.start(uri.hostname, uri.port, http_options) do |http|
+            Rails.logger.warn("***********START DEBUG DEVCOFFEE*********")
             Rails.logger.warn("requisition")
             Rails.logger.warn(req)
+            Rails.logger.warn("uri.hostname")
+            Rails.logger.warn(uri.hostname)
+            Rails.logger.warn("uri.port")
+            Rails.logger.warn(uri.port)
+            Rails.logger.warn("http_options")
+            Rails.logger.warn(http_options)
+            Rails.logger.warn("http")
+            Rails.logger.warn(http)
+            Rails.logger.warn("***********END DEBUG DEVCOFFEE*********")
             response = http.request(req)
+            Rails.logger.warn("***********START DEBUG DEVCOFFEE*********")
+            Rails.logger.warn("Response")
+            Rails.logger.warn(response)
+            Rails.logger.warn("***********END DEBUG DEVCOFFEE*********")
             Rails.logger.warn(response.inspect) unless [Net::HTTPSuccess, Net::HTTPRedirection, Net::HTTPOK].include? response
           end
         rescue StandardError => e
