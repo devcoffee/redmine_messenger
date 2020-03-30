@@ -56,15 +56,12 @@ class Messenger
         http_options = { use_ssl: uri.scheme == 'https' }
         http_options[:verify_mode] = OpenSSL::SSL::VERIFY_NONE unless RedmineMessenger.setting?(:messenger_verify_ssl)
         begin
-          req = Net::HTTP::Post.new(uri)
-          req.set_form_data(payload: params.to_json)
-          Net::HTTP.start(uri.host, uri.port, http_options) do |http|
-            Rails.logger.warn("******************************************* DEVCOFFEE *******************************************")
-            Rails.logger.warn(uri.host)
-            Rails.logger.warn("******************************************* DEVCOFFEE *******************************************")
-            Rails.logger.warn(uri.hostname)
-            Rails.logger.warn("******************************************* DEVCOFFEE *******************************************")
-          
+            req = Net::HTTP::Post.new(uri)
+            req.set_form_data(payload: params.to_json)
+            Rails.logger.warn("*****************************************************************")
+            Rails.logger.warn(params.to_json)
+            Rails.logger.warn("*****************************************************************")
+            Net::HTTP.start(uri.host, uri.port, http_options) do |http|
             response = http.request(req)
             Rails.logger.warn(response.inspect) unless [Net::HTTPSuccess, Net::HTTPRedirection, Net::HTTPOK].include? response
           end
