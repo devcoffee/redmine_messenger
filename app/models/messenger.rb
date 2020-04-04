@@ -59,7 +59,9 @@ class Messenger
             req = Net::HTTP::Post.new(uri)
             req.set_form_data(payload: params.to_json)
             Net::HTTP.start(uri.host, uri.port, http_options) do |http|
-            response = http.request(req)
+              request = Net::HTTP::Get.new uri
+              response = http.request request # Net::HTTPResponse object
+              #response = http.request(req)
             Rails.logger.warn(response.inspect) unless [Net::HTTPSuccess, Net::HTTPRedirection, Net::HTTPOK].include? response
           end
         rescue StandardError => e
