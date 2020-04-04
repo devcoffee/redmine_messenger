@@ -26,21 +26,23 @@ class Messenger
       { only_path: true, script_name: Redmine::Utils.relative_url_root }
     end
 
-    def speak(msg, channels, url, options)
-      url ||= RedmineMessenger.settings[:messenger_url]
-
+    def self.speak(msg, channels, attachment = nil, url = nil)
+      url = RedmineMessenger.settings[:messenger_url] unless url
+      icon = RedmineMessenger.settings[:messenger_icon]
+  
       return if url.blank?
       return if channels.blank?
-
+  
       params = {
         text: msg,
         link_names: 1
       }
-
-      username = Messenger.textfield_for_project(options[:project], :messenger_username)
-      params[:username] = username if username.present?
-      params[:attachments] = options[:attachment]&.any? ? [options[:attachment]] : []
-      icon = Messenger.textfield_for_project(options[:project], :messenger_icon)
+  
+      if RedmineMessenger.settings[:messenger_username].present?
+        params[:username] = RedmineMessenger.settings[:messenger_username]
+      end
+      params[:attachments] = [attachment] if attachment && attachment.any?
+  
       if icon.present?
         if icon.start_with? ':'
           params[:icon_emoji] = icon
@@ -48,38 +50,42 @@ class Messenger
           params[:icon_url] = icon
         end
       end
-
+  
       channels.each do |channel|
         uri = URI(url)
         params[:channel] = channel
-
+  
         http_options = { use_ssl: uri.scheme == 'https' }
-        http_options[:verify_mode] = OpenSSL::SSL::VERIFY_NONE unless RedmineMessenger.setting?(:messenger_verify_ssl)
-        begin
-          client = HTTPClient.new
-        client.ssl_config.cert_store.set_default_paths
-        client.ssl_config.ssl_version = :auto
         if RedmineMessenger.settings[:messenger_verify_ssl] != 1
-          client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE  
-          client.post_async url, payload: params.to_json
+          http_options[:verify_mode] = OpenSSL::SSL::VERIFY_NONE
+        end
+  
+        begin
+          req = Net::HTTP::Post.new(uri)
+          req.set_form_data(payload: params.to_json)
+          Net::HTTP.start(uri.hostname, uri.port, http_options) do |http|
+            response = http.request(req)
+            unless response == Net::HTTPSuccess || response == Net::HTTPRedirection
+              Rails.logger.warn(response)
+            end
+          end
         rescue StandardError => e
           Rails.logger.warn("cannot connect to #{url}")
           Rails.logger.warn(e)
         end
       end
     end
-
-    def object_url(obj)
-      if Setting.host_name.to_s =~ %r{\A(https?\://)?(.+?)(\:(\d+))?(/.+)?\z}i
+  
+    def self.object_url(obj)
+      if Setting.host_name.to_s =~ %r{/\A(https?\:\/\/)?(.+?)(\:(\d+))?(\/.+)?\z/i}
         host = Regexp.last_match(2)
         port = Regexp.last_match(4)
         prefix = Regexp.last_match(5)
         Rails.application.routes.url_for(obj.event_url(host: host, protocol: Setting.protocol, port: port, script_name: prefix))
       else
-        Rails.application.routes.url_for(obj.event_url(host: Setting.host_name, protocol: Setting.protocol, script_name: ''))
+        Rails.application.routes.url_for(obj.event_url(host: Setting.host_name, protocol: Setting.protocol))
       end
     end
-
     def url_for_project(proj)
       return if proj.blank?
 
