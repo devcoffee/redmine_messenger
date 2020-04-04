@@ -1,4 +1,4 @@
-require 'httpclient'
+require 'net/http'
 require 'uri'
 
 class Messenger
@@ -26,23 +26,21 @@ class Messenger
       { only_path: true, script_name: Redmine::Utils.relative_url_root }
     end
 
-    def self.speak(msg, channels, attachment = nil, url = nil)
-      url = RedmineMessenger.settings[:messenger_url] unless url
-      icon = RedmineMessenger.settings[:messenger_icon]
-  
+    def speak(msg, channels, url, options)
+      url ||= RedmineMessenger.settings[:messenger_url]
+
       return if url.blank?
       return if channels.blank?
-  
+
       params = {
         text: msg,
         link_names: 1
       }
-  
-      if RedmineMessenger.settings[:messenger_username].present?
-        params[:username] = RedmineMessenger.settings[:messenger_username]
-      end
-      params[:attachments] = [attachment] if attachment && attachment.any?
-  
+
+      username = Messenger.textfield_for_project(options[:project], :messenger_username)
+      params[:username] = username if username.present?
+      params[:attachments] = options[:attachment]&.any? ? [options[:attachment]] : []
+      icon = Messenger.textfield_for_project(options[:project], :messenger_icon)
       if icon.present?
         if icon.start_with? ':'
           params[:icon_emoji] = icon
@@ -50,24 +48,19 @@ class Messenger
           params[:icon_url] = icon
         end
       end
-  
+
       channels.each do |channel|
         uri = URI(url)
         params[:channel] = channel
-  
+
         http_options = { use_ssl: uri.scheme == 'https' }
-        if RedmineMessenger.settings[:messenger_verify_ssl] != 1
-          http_options[:verify_mode] = OpenSSL::SSL::VERIFY_NONE
-        end
-  
+        http_options[:verify_mode] = OpenSSL::SSL::VERIFY_NONE unless RedmineMessenger.setting?(:messenger_verify_ssl)
         begin
-          req = Net::HTTP::Post.new(uri)
-          req.set_form_data(payload: params.to_json)
-          Net::HTTP.start(uri.hostname, uri.port, http_options) do |http|
+            req = Net::HTTP::Post.new(uri)
+            req.set_form_data(payload: params.to_json)
+            Net::HTTP.start(uri.host, uri.port, http_options) do |http|
             response = http.request(req)
-            unless response == Net::HTTPSuccess || response == Net::HTTPRedirection
-              Rails.logger.warn(response)
-            end
+            Rails.logger.warn(response.inspect) unless [Net::HTTPSuccess, Net::HTTPRedirection, Net::HTTPOK].include? response
           end
         rescue StandardError => e
           Rails.logger.warn("cannot connect to #{url}")
@@ -75,17 +68,18 @@ class Messenger
         end
       end
     end
-  
-    def self.object_url(obj)
-      if Setting.host_name.to_s =~ %r{/\A(https?\:\/\/)?(.+?)(\:(\d+))?(\/.+)?\z/i}
+
+    def object_url(obj)
+      if Setting.host_name.to_s =~ %r{\A(https?\://)?(.+?)(\:(\d+))?(/.+)?\z}i
         host = Regexp.last_match(2)
         port = Regexp.last_match(4)
         prefix = Regexp.last_match(5)
         Rails.application.routes.url_for(obj.event_url(host: host, protocol: Setting.protocol, port: port, script_name: prefix))
       else
-        Rails.application.routes.url_for(obj.event_url(host: Setting.host_name, protocol: Setting.protocol))
+        Rails.application.routes.url_for(obj.event_url(host: Setting.host_name, protocol: Setting.protocol, script_name: ''))
       end
     end
+
     def url_for_project(proj)
       return if proj.blank?
 
