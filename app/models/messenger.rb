@@ -1,4 +1,4 @@
-require 'net/http'
+require 'httpclient'
 require 'uri'
 
 class Messenger
@@ -56,17 +56,14 @@ class Messenger
         http_options = { use_ssl: uri.scheme == 'https' }
         http_options[:verify_mode] = OpenSSL::SSL::VERIFY_NONE unless RedmineMessenger.setting?(:messenger_verify_ssl)
         begin
-            req = Net::HTTP::Post.new(uri)
-            req.set_form_data(payload: params.to_json)
-            Net::HTTP.start(uri.host, uri.port, http_options) do |http|
-            response = http.request(req)
-            Rails.logger.warn(response.inspect) unless [Net::HTTPSuccess, Net::HTTPRedirection, Net::HTTPOK].include? response
-          end
-        rescue StandardError => e
-          Rails.logger.warn("cannot connect to #{url}")
-          Rails.logger.warn(e)
-        end
+          client = HTTPClient.new
+        client.ssl_config.cert_store.set_default_paths
+        client.ssl_config.ssl_version = :auto
+        if RedmineMessenger.settings[:messenger_verify_ssl] != 1
+          client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
       end
+      client.post_async url, payload: params.to_json
+
     end
 
     def object_url(obj)
